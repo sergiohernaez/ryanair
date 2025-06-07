@@ -11,6 +11,6 @@ public class ScheduleClient {
     public List<Schedule> getSchedules(Integer month, Integer year, String departure, String arrival) {
 
         //TODO
-        return List.of(new Schedule());
+        return List.of(Schedule.builder().build());
     }
 }
