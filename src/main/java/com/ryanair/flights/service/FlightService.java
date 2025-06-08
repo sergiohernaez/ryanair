@@ -51,7 +51,7 @@ public class FlightService {
             return new ArrayList<>();
 
         //sacar las schedules del vuelo en el dia que se quiere
-        List<Schedule> schedules = getSchedules(departure, arrival, departureDateTime, arrivalDateTime);
+        Schedule schedules = getSchedules(departure, arrival, departureDateTime, arrivalDateTime);
 
         //mapear
         return List.of(FlightDTO.builder().build());
@@ -80,7 +80,7 @@ public class FlightService {
         return routeClient.getRoutes();
     }
 
-    private List<Schedule> getSchedules(String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
+    private Schedule getSchedules(String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
         //TODO
         Integer month = 7;
         Integer year = 2025;

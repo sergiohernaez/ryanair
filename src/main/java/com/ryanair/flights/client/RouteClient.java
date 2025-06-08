@@ -1,6 +1,7 @@
 package com.ryanair.flights.client;
 
 import com.ryanair.flights.client.domain.Route;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -12,16 +13,19 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class RouteClient {
 
-    @Value("${client.route.url}")
-    private String url;
+    @Value("${routeUrl}")
+    private final String url;
 
     public List<Route> getRoutes() {
-        WebClient client = WebClient.create(url);
-        WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = client.method(HttpMethod.POST);
+        WebClient client = WebClient.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
+                .build();
 
         Mono<List<Route>> response = client.get()
+                .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Route>>() {});
