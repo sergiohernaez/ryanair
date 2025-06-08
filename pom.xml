@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.ryanair</groupId>
-	<artifactId>flights</artifactId>
+	<artifactId>itineraries</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>flights</name>
-	<description>Task: Interconnecting flights</description>
+	<name>itineraries</name>
+	<description>Task: Interconnecting itineraries</description>
 	<url/>
 	<licenses>
 		<license/>

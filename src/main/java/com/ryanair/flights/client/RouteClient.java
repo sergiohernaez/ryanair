@@ -1,6 +1,7 @@
 package com.ryanair.flights.client;
 
 import com.ryanair.flights.client.domain.Route;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -13,11 +14,11 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class RouteClient {
 
     @Value("${routeUrl}")
-    private final String url;
+    private String url;
 
     public List<Route> getRoutes() {
         WebClient client = WebClient.builder()

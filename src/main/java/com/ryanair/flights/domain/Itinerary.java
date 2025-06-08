@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class Flight {
+public class Itinerary {
 
     String departure;
     String layover;

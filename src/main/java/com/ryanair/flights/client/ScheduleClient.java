@@ -1,6 +1,7 @@
 package com.ryanair.flights.client;
 
 import com.ryanair.flights.client.domain.Schedule;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -12,11 +13,11 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class ScheduleClient {
 
     @Value("${scheduleUrl}")
-    private final String url;
+    private String url;
 
     public Schedule getSchedules(Integer month, Integer year, String departure, String arrival) {
 
