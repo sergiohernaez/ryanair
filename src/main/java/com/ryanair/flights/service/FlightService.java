@@ -11,6 +11,7 @@ import com.ryanair.flights.controller.dto.LegDTO;
 import com.ryanair.flights.domain.Itinerary;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,9 @@ public class FlightService {
 
     private final RouteClient routeClient;
     private final ScheduleClient scheduleClient;
+
+    @Value("${layoverHours}")
+    private Integer layoverHours;
 
     public List<FlightDTO> getFlights(String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
         if (validateDatesAreSameDay(departureDateTime, arrivalDateTime)) {
@@ -103,6 +107,7 @@ public class FlightService {
                     if(day.getDay().equals(departureDateTime.getDayOfMonth())) {
                         for(Flight flightFirst: day.getFlights()) {
                             if(flightFirst.getDepartureTime().isAfter(departureDateTime.toLocalTime()) &&
+                                    flightFirst.getArrivalTime().isAfter(flightFirst.getDepartureTime()) &&
                                     flightFirst.getArrivalTime().isBefore(arrivalDateTime.toLocalTime())) {
                                 //MATCH
                                 LegDTO legFirstDTO = LegDTO.builder()
@@ -118,7 +123,8 @@ public class FlightService {
                                 for(Day daySecond: schedulesSecond.getDays()) {
                                     if (daySecond.getDay().equals(departureDateTime.getDayOfMonth())) {
                                         for (Flight flightSecond : daySecond.getFlights()) {
-                                            if (flightSecond.getDepartureTime().isAfter(flightFirst.getArrivalTime().plusHours(2)) &&
+                                            if (flightSecond.getDepartureTime().isAfter(flightFirst.getArrivalTime().plusHours(layoverHours)) &&
+                                                    flightSecond.getArrivalTime().isAfter(flightSecond.getDepartureTime()) &&
                                                     flightSecond.getArrivalTime().isBefore(arrivalDateTime.toLocalTime())) {
                                                 //MATCH
                                                 LegDTO legSecondDTO = LegDTO.builder()
