@@ -27,21 +27,23 @@ public class FlightService {
     private final ScheduleClient scheduleClient;
 
     public List<FlightDTO> getFlights(String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
-        List<Route> routes = getRoutes();
-        List<FlightDTO> flights = new ArrayList<>();
-        List<FlightDTO> simple = getSimpleFlights(routes, departure, arrival, departureDateTime, arrivalDateTime);
-        List<FlightDTO> combined = getCombinedFlights(routes, departure, arrival, departureDateTime, arrivalDateTime);
+        if (validateDatesAreSameDay(departureDateTime, arrivalDateTime)) {
+            List<Route> routes = getRoutes();
+            List<FlightDTO> flights = new ArrayList<>();
+            List<FlightDTO> simple = getSimpleFlights(routes, departure, arrival, departureDateTime, arrivalDateTime);
+            List<FlightDTO> combined = getCombinedFlights(routes, departure, arrival, departureDateTime, arrivalDateTime);
 
-        flights.addAll(simple);
-        flights.addAll(combined);
-        return flights;
+            flights.addAll(simple);
+            flights.addAll(combined);
+            return flights;
+        }
+        return new ArrayList<>();
     }
-
-
 
     private List<FlightDTO> getSimpleFlights(List<Route> routes, String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
         List<FlightDTO> flights = new ArrayList<>();
         Itinerary itinerary = null;
+
         for(Route route: routes) {
             if(route.getAirportFrom().equals(departure) && route.getAirportTo().equals(arrival)) {
                 itinerary = Itinerary.builder().departure(departure).arrival(arrival).build();
@@ -51,11 +53,10 @@ public class FlightService {
         if(Objects.isNull(itinerary))
             return new ArrayList<>();
 
-        //TODO salida puede tener un mes distinto de llegada
         if(departureDateTime.getMonth().equals(arrivalDateTime.getMonth())) {
             Schedule schedules = getSchedules(departure, arrival, departureDateTime);
             for(Day day: schedules.getDays()) {
-                if(day.equals(departureDateTime.getDayOfMonth())) {
+                if(day.getDay().equals(departureDateTime.getDayOfMonth())) {
                     for(Flight flight: day.getFlights()) {
                         if(flight.getDepartureTime().isAfter(departureDateTime.toLocalTime()) &&
                             flight.getArrivalTime().isBefore(arrivalDateTime.toLocalTime())) {
@@ -73,15 +74,13 @@ public class FlightService {
             }
         }
 
-
-        //mapear
         return flights;
     }
 
     private List<FlightDTO> getCombinedFlights(List<Route> routes, String departure, String arrival, LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
-        //TODO
-        //sacar los datos y combinarlos en el dto
         List<Itinerary> itineraries = new ArrayList<>();
+        List<FlightDTO> flights = new ArrayList<>();
+
         for(Route route: routes) {
             if(route.getAirportFrom().equals(departure)) {
                 for(Route route2: routes) {
@@ -93,8 +92,56 @@ public class FlightService {
             }
         }
 
-        //para cada combinacion, sacar las schedules de cada trayecto, y construir la respuesta
-        return List.of(FlightDTO.builder().build());
+        if(itineraries.isEmpty())
+            return new ArrayList<>();
+
+        if(departureDateTime.getMonth().equals(arrivalDateTime.getMonth())) {
+            for(Itinerary itinerary: itineraries) {
+                //first flight
+                Schedule schedulesFirst = getSchedules(itinerary.getDeparture(), itinerary.getLayover(), departureDateTime);
+                for(Day day: schedulesFirst.getDays()) {
+                    if(day.getDay().equals(departureDateTime.getDayOfMonth())) {
+                        for(Flight flightFirst: day.getFlights()) {
+                            if(flightFirst.getDepartureTime().isAfter(departureDateTime.toLocalTime()) &&
+                                    flightFirst.getArrivalTime().isBefore(arrivalDateTime.toLocalTime())) {
+                                //MATCH
+                                LegDTO legFirstDTO = LegDTO.builder()
+                                        .departureDateTime(LocalDateTime.of(departureDateTime.toLocalDate(), flightFirst.getDepartureTime()))
+                                        .arrivalDateTime(LocalDateTime.of(arrivalDateTime.toLocalDate(), flightFirst.getArrivalTime()))
+                                        .departureAirport(itinerary.getDeparture())
+                                        .arrivalAirport(itinerary.getLayover())
+                                        .build();
+
+                                //second flight
+                                Schedule schedulesSecond = getSchedules(itinerary.getLayover(), itinerary.getArrival(), departureDateTime);
+
+                                for(Day daySecond: schedulesSecond.getDays()) {
+                                    if (daySecond.getDay().equals(departureDateTime.getDayOfMonth())) {
+                                        for (Flight flightSecond : daySecond.getFlights()) {
+                                            if (flightSecond.getDepartureTime().isAfter(flightFirst.getArrivalTime().plusHours(2)) &&
+                                                    flightSecond.getArrivalTime().isBefore(arrivalDateTime.toLocalTime())) {
+                                                //MATCH
+                                                LegDTO legSecondDTO = LegDTO.builder()
+                                                        .departureDateTime(LocalDateTime.of(departureDateTime.toLocalDate(), flightSecond.getDepartureTime()))
+                                                        .arrivalDateTime(LocalDateTime.of(arrivalDateTime.toLocalDate(), flightSecond.getArrivalTime()))
+                                                        .departureAirport(itinerary.getLayover())
+                                                        .arrivalAirport(itinerary.getArrival())
+                                                        .build();
+
+                                                //create combined flight and add
+                                                flights.add(FlightDTO.builder().stops(1).legs(List.of(legFirstDTO, legSecondDTO)).build());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return flights;
     }
 
     private List<Route> getRoutes() {
@@ -103,5 +150,9 @@ public class FlightService {
 
     private Schedule getSchedules(String departure, String arrival, LocalDateTime date) {
         return scheduleClient.getSchedules(date.getMonthValue(), date.getYear(), departure, arrival);
+    }
+
+    private boolean validateDatesAreSameDay(LocalDateTime departureDateTime, LocalDateTime arrivalDateTime) {
+        return departureDateTime.toLocalDate().isEqual(arrivalDateTime.toLocalDate());
     }
 }
