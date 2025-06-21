@@ -80,4 +80,72 @@ public class FlightServiceTest {
         }
     }
 
+    @Test
+    void getFlights_reducedTime() {
+
+        LocalDate date = LocalDate.of(2025, Month.DECEMBER, 1);
+
+        when(routeClient.getRoutes()).thenReturn(TestUtils.getRoutes());
+        when(scheduleClient.getSchedules(12,2025,"MAD","DUB")).thenReturn(TestUtils.getSchedulesMadridDublin());
+        when(scheduleClient.getSchedules(12,2025,"MAD","STN")).thenReturn(TestUtils.getSchedulesMadridLondon());
+        when(scheduleClient.getSchedules(12,2025,"STN","DUB")).thenReturn(TestUtils.getSchedulesLondonDublin());
+
+        List<FlightDTO> flights = flightService.getFlights(
+                "MAD",
+                "DUB",
+                date.atTime(8,0),
+                date.atTime(14,0));
+
+        assertEquals(1, flights.size());
+
+        FlightDTO flight = flights.getFirst();
+        assertEquals(1, flight.getLegs().size());
+        LegDTO leg = flight.getLegs().getFirst();
+        assertEquals("MAD",leg.getDepartureAirport());
+        assertEquals("DUB",leg.getArrivalAirport());
+        assertEquals(date.atTime(10,0),leg.getDepartureDateTime());
+        assertEquals(date.atTime(12,0),leg.getArrivalDateTime());
+    }
+
+    @Test
+    void getFlights_routeDoesNotExist() {
+        LocalDate date = LocalDate.of(2025, Month.DECEMBER, 1);
+
+        when(routeClient.getRoutes()).thenReturn(TestUtils.getRoutes());
+
+        List<FlightDTO> flights = flightService.getFlights(
+                "MAD",
+                "SJJ",
+                date.atTime(8,0),
+                date.atTime(22,0));
+
+        assertEquals(0, flights.size());
+    }
+
+    @Test
+    void getFlights_wrongDates_moreThanOneDay() {
+        LocalDate date = LocalDate.of(2025, Month.DECEMBER, 1);
+
+        List<FlightDTO> flights = flightService.getFlights(
+                "MAD",
+                "DUB",
+                date.atTime(8,0),
+                date.plusDays(1).atTime(22,0));
+
+        assertEquals(0, flights.size());
+    }
+
+    @Test
+    void getFlights_wrongDates_ArrivalAfterDeparture() {
+        LocalDate date = LocalDate.of(2025, Month.DECEMBER, 1);
+
+        List<FlightDTO> flights = flightService.getFlights(
+                "MAD",
+                "DUB",
+                date.plusDays(2).atTime(8,0),
+                date.atTime(22,0));
+
+        assertEquals(0, flights.size());
+    }
+
 }
